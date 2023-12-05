@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, TextField } from "@radix-ui/themes";
+import { Button, Callout, TextField } from "@radix-ui/themes";
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
 import { useForm, Controller } from "react-hook-form";
@@ -14,6 +14,7 @@ interface IssueForm {
 }
 
 const NewIssuePage = () => {
+  const [error, setError] = useState("");
   const [formValue, setFormValue] = useState({
     title: "",
     description: "",
@@ -26,24 +27,36 @@ const NewIssuePage = () => {
 
   const handleSubmitForm = async (e: any) => {
     e.preventDefault();
-    await axios.post("/api/issues", formValue);
-    router.push("/issues");
+    try {
+      await axios.post("/api/issues", formValue);
+      router.push("/issues");
+    } catch (error) {
+      setError("An unexpected error occurred.");
+    }
   };
 
   return (
-    <form className="max-w-xl space-y-3" onSubmit={handleSubmitForm}>
-      <TextField.Root>
-        <TextField.Input
-          placeholder="Title"
-          value={formValue.title}
-          onChange={(e) =>
-            setFormValue({ ...formValue, title: e.target.value })
-          }
-        />
-      </TextField.Root>
-      <SimpleMDE placeholder="Issue Details" onChange={SimpleMDEValue} />
-      <Button>Submit New Issue</Button>
-    </form>
+    <div className="max-w-xl space-y-3">
+      {error && (
+        <Callout.Root color="red">
+          <Callout.Text>{error}</Callout.Text>
+        </Callout.Root>
+      )}
+
+      <form className="space-y-3" onSubmit={handleSubmitForm}>
+        <TextField.Root>
+          <TextField.Input
+            placeholder="Title"
+            value={formValue.title}
+            onChange={(e) =>
+              setFormValue({ ...formValue, title: e.target.value })
+            }
+          />
+        </TextField.Root>
+        <SimpleMDE placeholder="Issue Details" onChange={SimpleMDEValue} />
+        <Button>Submit New Issue</Button>
+      </form>
+    </div>
   );
 };
 
