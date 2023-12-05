@@ -1,37 +1,39 @@
 "use client";
 
-import { Button, Callout, TextField } from "@radix-ui/themes";
+import { Button, Callout, Text, TextField } from "@radix-ui/themes";
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
 import { useForm, Controller } from "react-hook-form";
 import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-interface IssueForm {
-  title: string;
-  description: string;
-}
+import { createIssueSchema } from "@/app/validationSchemas";
+
+type IssueForm = z.infer<typeof createIssueSchema>;
 
 const NewIssuePage = () => {
   const [error, setError] = useState("");
-  const [formValue, setFormValue] = useState({
-    title: "",
-    description: "",
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<IssueForm>({
+    resolver: zodResolver(createIssueSchema),
   });
+
   const router = useRouter();
 
-  const SimpleMDEValue = (value: string) => {
-    setFormValue({ ...formValue, description: value });
-  };
-
-  const handleSubmitForm = async (e: any) => {
-    e.preventDefault();
+  const handleFormSubmit = async (data: IssueForm) => {
     try {
-      await axios.post("/api/issues", formValue);
+      await axios.post("/api/issues", data);
       router.push("/issues");
     } catch (error) {
-      setError("An unexpected error occurred.");
+      setError("An unexpected error has occurred");
     }
   };
 
@@ -43,17 +45,31 @@ const NewIssuePage = () => {
         </Callout.Root>
       )}
 
-      <form className="space-y-3" onSubmit={handleSubmitForm}>
+      <form
+        className="space-y-3"
+        onSubmit={handleSubmit((data) => handleFormSubmit(data))}
+      >
         <TextField.Root>
-          <TextField.Input
-            placeholder="Title"
-            value={formValue.title}
-            onChange={(e) =>
-              setFormValue({ ...formValue, title: e.target.value })
-            }
-          />
+          <TextField.Input placeholder="Title" {...register("title")} />
         </TextField.Root>
-        <SimpleMDE placeholder="Issue Details" onChange={SimpleMDEValue} />
+        {errors.title && (
+          <Text color="red" as="p">
+            {errors.title.message}
+          </Text>
+        )}
+        <Controller
+          name="description"
+          control={control}
+          render={({ field }) => (
+            <SimpleMDE placeholder="Issue Details" {...field} />
+          )}
+        />
+        {errors.description && (
+          <Text color="red" as="p">
+            {errors.description.message}
+          </Text>
+        )}
+
         <Button>Submit New Issue</Button>
       </form>
     </div>
